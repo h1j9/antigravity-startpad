@@ -39,7 +39,7 @@
         <div class="status-grid">
           <section class="status-card"><div class="card-title"><span>客户端</span><span class="card-icon">⌁</span></div><strong id="targetStatus">正在检测…</strong><p id="targetDetail">查找 Antigravity 安装位置</p><button class="text-button" id="chooseTargetButton">手动选择</button></section>
           <section class="status-card"><div class="card-title"><span>文件补丁</span><span class="card-icon">◇</span></div><strong id="patchStatus">等待检测</strong><p id="patchDetail">启动前会核验原版备份</p><button class="text-button" id="openBackupsButton">备份目录</button></section>
-          <section class="status-card"><div class="card-title"><span>本地代理</span><span class="card-icon">↗</span></div><strong id="proxyStatus">等待检测</strong><p id="proxyDetail">请在设置中填写代理地址</p><button class="text-button" id="refreshButton">重新检查</button></section>
+          <section class="status-card"><div class="card-title"><span>本地代理</span><span class="card-icon">↗</span></div><strong id="proxyStatus">等待检测</strong><p id="proxyDetail">留空自动探测，也可手动填写</p><button class="text-button" id="refreshButton">重新检查</button></section>
         </div>
         <section class="log-card"><div class="log-header"><div><h2>运行记录</h2><span>补丁、代理与恢复结果会显示在这里</span></div><button class="text-button" id="clearLogsButton">清空</button></div><div class="log-list" id="logList"><div class="empty-log">暂无记录，正在准备环境检查。</div></div></section>
       </section>
@@ -47,10 +47,10 @@
       <section class="view" id="view-settings">
         <header class="page-header"><div><p class="eyebrow">PREFERENCES</p><h1>设置</h1><p>只保留启动流程需要的选项。</p></div></header>
         <section class="settings-card">
-          <div class="setting-row vertical"><div><label for="proxyInput">本地代理地址</label><p>支持 HTTP CONNECT、SOCKS5 或混合端口，地址和端口以你的代理软件为准，无需开启 TUN。</p></div><input id="proxyInput" class="text-input" spellcheck="false" placeholder="http://127.0.0.1:端口 或 socks5://127.0.0.1:端口" /></div>
+          <div class="setting-row vertical"><div><label for="proxyInput">本地代理地址</label><p>留空时自动读取系统代理并扫描常见本地端口，真实握手通过后填入。你也可以直接手动填写或修改，支持 HTTP CONNECT、SOCKS5 或混合端口。</p></div><input id="proxyInput" class="text-input" spellcheck="false" placeholder="留空自动探测，或填写 http://主机:端口 / socks5://主机:端口" /></div>
           <div class="setting-row"><div><label for="autoLaunchInput">打开启动台后自动启动</label><p>自动执行检查、补丁、代理注入和客户端启动，每次打开只执行一次。</p></div><label class="switch"><input type="checkbox" id="autoLaunchInput" /><span></span></label></div>
           <div class="setting-row"><div><label for="autoRestoreInput">反重力退出后恢复原版</label><p>推荐开启。无论是否开启，进程代理都会随客户端退出而消失。</p></div><label class="switch"><input type="checkbox" id="autoRestoreInput" /><span></span></label></div>
-          <div class="settings-actions"><button class="primary-button compact" id="saveSettingsButton">保存设置</button><span id="settingsSaved"></span></div>
+          <div class="settings-actions"><button class="secondary-button" id="autoDetectProxyButton">自动探测并填入</button><button class="primary-button compact" id="saveSettingsButton">保存设置</button><span id="settingsSaved"></span></div>
         </section>
         <section class="settings-card"><div class="setting-row vertical"><div><label>客户端位置</label><p id="settingsTargetPath">尚未检测</p></div><div class="inline-actions"><button class="secondary-button" id="settingsChooseTarget">更改位置</button><button class="text-button" id="resetTargetButton">恢复自动查找</button></div></div></section>
       </section>

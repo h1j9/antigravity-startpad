@@ -1,7 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const net = require('net');
-const { parseProxyUrl, buildEnv, proxyArgument, redact, probe } = require('../src/core/proxy');
+const {
+  parseProxyUrl, buildEnv, proxyArgument, redact, probe, scan, buildCandidates,
+  toProxyUrl, COMMON_PROXY_PORTS,
+} = require('../src/core/proxy');
 const { DEFAULTS } = require('../src/core/config');
 const { LauncherSession } = require('../src/core/session');
 
@@ -45,6 +48,39 @@ test('SOCKS5-only 使用一致协议，日志地址不泄露凭证', () => {
   assert.equal(proxyArgument(ep), '--proxy-server=socks5://127.0.0.1:1080');
   assert.equal(redact(ep), 'socks5://127.0.0.1:1080');
   assert.equal(redact(ep).includes('secret'), false);
+});
+
+test('自动候选按手动、系统、常见端口排列并去重，协议格式化正确', () => {
+  const candidates = buildCandidates('http://127.0.0.1:18080', () => [
+    { host: '127.0.0.1', port: 18081, scheme: 'http', origin: '系统代理' },
+    { host: '127.0.0.1', port: 18080, scheme: 'http', origin: '系统代理' },
+  ]);
+  assert.deepEqual(candidates.slice(0, 2).map(ep => ep.port), [18080, 18081]);
+  assert.equal(candidates.filter(ep => ep.port === 18080).length, 1);
+  assert.equal(candidates.length, 2 + COMMON_PROXY_PORTS.filter(port => ![18080, 18081].includes(port)).length);
+  assert.equal(toProxyUrl({ kind: 'mixed', host: '127.0.0.1', port: 18080 }), 'http://127.0.0.1:18080');
+  assert.equal(toProxyUrl({ kind: 'socks5', host: '127.0.0.1', port: 18081 }), 'socks5://127.0.0.1:18081');
+});
+
+test('自动扫描保留可用手动地址，空白时优先双目标通过的候选', async () => {
+  const systemReader = () => [
+    { host: '127.0.0.1', port: 18082, scheme: 'http', origin: '系统代理' },
+    { host: '127.0.0.1', port: 18081, scheme: 'http', origin: '系统代理' },
+  ];
+  const classifyProxy = async ep => ({
+    ...ep,
+    kind: 'http',
+    loginOk: [18080, 18081, 18082].includes(ep.port),
+    modelOk: ep.port === 18081,
+    modelDetail: 'mock',
+    rtt: 1,
+  });
+  const manual = await scan('http://127.0.0.1:18080', null, { systemReader, classifyProxy });
+  assert.equal(manual.best.port, 18080);
+  assert.equal(manual.best.origin, '手动填写');
+  const automatic = await scan('', null, { systemReader, classifyProxy });
+  assert.equal(automatic.best.port, 18081);
+  assert.equal(automatic.best.origin, '系统代理');
 });
 
 test('本地 mixed 代理握手与双目标检查', async () => {

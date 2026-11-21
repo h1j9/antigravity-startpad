@@ -16,6 +16,7 @@ let session = null;
 let allowQuit = false;
 let quitInProgress = false;
 let autoStarted = false;
+let proxyDiscovery = null;
 
 const emit = (channel, payload) => {
   windowSafe.send(win, channel, payload);
@@ -113,23 +114,67 @@ async function requestQuit(fromTray) {
   }
 }
 
+async function discoverProxy(manualUrl = '', protectExisting = false) {
+  const initialUrl = String(config.data.proxyUrl || '').trim();
+  try {
+    const { best } = await proxy.scan(manualUrl);
+    const currentUrl = String(config.data.proxyUrl || '').trim();
+    if ((protectExisting && currentUrl) || currentUrl !== initialUrl) {
+      return { ok: true, proxyUrl: currentUrl, best: null, autoDetected: false };
+    }
+    if (!best) return { ok: false, error: '没有探测到通过真实握手的本地代理，请确认代理已启用，或手动填写地址和端口' };
+    const proxyUrl = proxy.toProxyUrl(best);
+    config.set({ proxyUrl });
+    log('success', `已自动探测并填入本地代理：${proxy.redact(best)}（${best.origin}，${best.kind}）`);
+    return { ok: true, proxyUrl, best, autoDetected: true };
+  } catch (error) {
+    return { ok: false, error: `自动探测代理失败：${error.message}` };
+  }
+}
+
+async function ensureProxyConfigured() {
+  const current = String(config.data.proxyUrl || '').trim();
+  if (current) return { ok: true, proxyUrl: current, best: null, autoDetected: false };
+  if (!proxyDiscovery) {
+    proxyDiscovery = discoverProxy('', true).finally(() => { proxyDiscovery = null; });
+  }
+  return proxyDiscovery;
+}
+
 async function probe() {
   const target = session.resolveTarget();
   const inspection = target.found
     ? patcher.inspect(target.languageServer)
     : { status: 'missing', restorable: false };
-  const proxyUrl = String(config.data.proxyUrl || '').trim();
-  const checked = proxyUrl ? await proxy.probe(proxyUrl) : null;
+  let proxyUrl = String(config.data.proxyUrl || '').trim();
+  let checked = null;
+  let autoDetected = false;
+  let discoveryError = null;
+  if (!proxyUrl) {
+    const discovered = await ensureProxyConfigured();
+    autoDetected = discovered.autoDetected;
+    if (discovered.ok && discovered.best) {
+      proxyUrl = discovered.proxyUrl;
+      checked = { ok: true, result: discovered.best, error: null };
+    } else {
+      proxyUrl = String(config.data.proxyUrl || '').trim();
+      discoveryError = discovered.error || null;
+    }
+  }
+  if (proxyUrl && !checked) checked = await proxy.probe(proxyUrl);
   return {
     target,
     inspection,
+    proxyUrl,
     running: target.found ? session.runningFor(target) : [],
     proxy: checked ? {
       ok: checked.ok,
       configured: true,
+      autoDetected,
       error: checked.error,
       endpoint: checked.result ? proxy.redact(checked.result) : proxyUrl,
       kind: checked.result ? checked.result.kind : null,
+      origin: checked.result ? checked.result.origin || null : null,
       loginOk: checked.result ? checked.result.loginOk : false,
       modelOk: checked.result ? checked.result.modelOk : false,
       modelDetail: checked.result ? checked.result.modelDetail : null,
@@ -137,9 +182,11 @@ async function probe() {
     } : {
       ok: false,
       configured: false,
-      error: null,
+      autoDetected: false,
+      error: discoveryError,
       endpoint: '未配置',
       kind: null,
+      origin: null,
       loginOk: false,
       modelOk: false,
       modelDetail: null,
@@ -156,6 +203,8 @@ ipcMain.handle('boot', () => ({
 }));
 ipcMain.handle('probe', probe);
 ipcMain.handle('launch', async () => {
+  const ready = await ensureProxyConfigured();
+  if (!ready.ok) return { ok: false, error: ready.error };
   const result = await session.start();
   emit('probe-refresh', {});
   return result;
@@ -182,6 +231,17 @@ ipcMain.handle('choose-target', async () => {
 ipcMain.handle('reset-target', () => {
   config.set({ targetPath: null });
   return detect.detect();
+});
+ipcMain.handle('auto-detect-proxy', async (event, manualUrl) => {
+  const result = await discoverProxy(typeof manualUrl === 'string' ? manualUrl : '');
+  return {
+    ok: result.ok,
+    error: result.error || null,
+    proxyUrl: result.proxyUrl || '',
+    kind: result.best ? result.best.kind : null,
+    origin: result.best ? result.best.origin : null,
+    modelOk: result.best ? result.best.modelOk : false,
+  };
 });
 ipcMain.handle('set-config', (event, incoming) => {
   const update = {};
@@ -241,6 +301,12 @@ if (!app.requestSingleInstanceLock()) {
     setTimeout(async () => {
       if (autoStarted || allowQuit || quitInProgress || !config.data.autoLaunch || process.env.AG_STARTPAD_NO_AUTO === '1') return;
       autoStarted = true;
+      const ready = await ensureProxyConfigured();
+      if (!ready.ok) {
+        log('warning', ready.error);
+        emit('probe-refresh', {});
+        return;
+      }
       const result = await session.start();
       if (result.needsQuit) log('warning', '自动启动已暂停：请先处理正在运行的反重力残留实例');
       emit('probe-refresh', {});

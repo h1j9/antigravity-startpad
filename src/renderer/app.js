@@ -5,10 +5,11 @@ let sessionState = { phase: 'idle', busy: false, running: false };
 let logs = [];
 let noticeHandler = null;
 let refreshTimer = null;
+let proxyInputDirty = false;
 
 function proxyDisplay(value) {
   const text = String(value || '').trim();
-  return text ? text.replace(/^[a-z]+:\/\//i, '') : '未配置代理';
+  return text ? text.replace(/^[a-z][a-z0-9+.-]*:\/\/(?:[^/@]*@)?/i, '') : '未配置代理';
 }
 
 const phaseText = {
@@ -83,6 +84,16 @@ function updateSession(state) {
 }
 function renderProbe(data) {
   latestProbe = data;
+  const p = data.proxy;
+  if (p.autoDetected && data.proxyUrl) {
+    if (!proxyInputDirty) {
+      $('proxyInput').value = data.proxyUrl;
+      $('settingsSaved').textContent = '已自动填入，可手动修改';
+    } else {
+      $('settingsSaved').textContent = '探测完成，未覆盖正在编辑的内容';
+    }
+    $('sidebarProxy').textContent = proxyDisplay(data.proxyUrl);
+  }
   const target = data.target;
   $('targetStatus').textContent = target.found ? '已找到 Antigravity' : '未找到客户端';
   $('targetDetail').textContent = target.found ? target.path : (target.error || '请手动选择 Antigravity.exe');
@@ -94,11 +105,10 @@ function renderProbe(data) {
   $('patchDetail').textContent = status === 'patched'
     ? (data.inspection.restorable ? '原版备份可用，退出后恢复' : '启动时会核验现有 .agybak 备份')
     : status === 'unpatched' ? '启动前自动备份并应用补丁' : '不会修改无法识别的文件';
-  const p = data.proxy;
   if (p.configured === false) {
-    $('proxyStatus').textContent = '未配置代理';
-    $('proxyDetail').textContent = '请在设置中填写地址和端口';
-    $('proxyDetail').title = '地址和端口以你的代理软件显示为准';
+    $('proxyStatus').textContent = p.error ? '未探测到代理' : '未配置代理';
+    $('proxyDetail').textContent = p.error || '留空可自动探测，也可在设置中手动填写';
+    $('proxyDetail').title = p.error || '可自动探测，也可手动修改代理地址';
   } else {
     $('proxyStatus').textContent = p.ok ? `代理可用 · ${p.kind}` : '代理不可用';
     $('proxyDetail').textContent = p.ok ? `${p.endpoint} · ${p.rtt}ms${p.modelOk ? '' : ' · 模型握手失败'}` : (p.error || p.endpoint);
@@ -154,9 +164,41 @@ $('clearLogsButton').addEventListener('click', () => { logs = []; renderLogs(); 
 $('noticeClose').addEventListener('click', hideNotice);
 $('noticeAction').addEventListener('click', () => { if (noticeHandler) noticeHandler(); });
 $('resetTargetButton').addEventListener('click', async () => { await api.resetTarget(); await refresh(); });
+$('proxyInput').addEventListener('input', () => { proxyInputDirty = true; $('settingsSaved').textContent = ''; });
+$('autoDetectProxyButton').addEventListener('click', async () => {
+  const button = $('autoDetectProxyButton');
+  const manualUrl = $('proxyInput').value;
+  proxyInputDirty = false;
+  button.disabled = true;
+  button.textContent = '正在探测…';
+  $('settingsSaved').textContent = '正在验证系统代理和常见本地端口';
+  try {
+    const result = await api.autoDetectProxy(manualUrl);
+    if (!result.ok) {
+      $('settingsSaved').textContent = '';
+      showNotice(result.error || '没有探测到可用代理，请手动填写。', null, null, true);
+      return;
+    }
+    if (!proxyInputDirty) {
+      $('proxyInput').value = result.proxyUrl;
+      $('settingsSaved').textContent = '已自动填入，可继续手动修改';
+    } else {
+      $('settingsSaved').textContent = '探测完成，未覆盖正在编辑的内容';
+    }
+    $('sidebarProxy').textContent = proxyDisplay(result.proxyUrl);
+    await refresh();
+  } catch (error) {
+    $('settingsSaved').textContent = '';
+    showNotice(`自动探测失败：${error.message}`, null, null, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = '自动探测并填入';
+  }
+});
 $('saveSettingsButton').addEventListener('click', async () => {
   const result = await api.setConfig({ proxyUrl: $('proxyInput').value, autoLaunch: $('autoLaunchInput').checked, autoRestore: $('autoRestoreInput').checked });
   if (!result.ok) { showNotice(result.error, null, null, true); return; }
+  proxyInputDirty = false;
   $('settingsSaved').textContent = '已保存';
   $('sidebarProxy').textContent = proxyDisplay($('proxyInput').value);
   setTimeout(() => { $('settingsSaved').textContent = ''; }, 1800);

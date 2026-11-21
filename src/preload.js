@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('startpad', {
   chooseTarget: () => ipcRenderer.invoke('choose-target'),
   resetTarget: () => ipcRenderer.invoke('reset-target'),
   setConfig: config => ipcRenderer.invoke('set-config', config),
+  autoDetectProxy: manualUrl => ipcRenderer.invoke('auto-detect-proxy', manualUrl),
   quitInstances: pids => ipcRenderer.invoke('quit-instances', pids),
   openExternal: url => ipcRenderer.invoke('open-external', url),
   openBackups: () => ipcRenderer.invoke('open-backups'),
