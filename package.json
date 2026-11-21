@@ -1,7 +1,7 @@
 {
   "name": "antigravity-startpad",
-  "version": "1.0.2",
-  "description": "Antigravity desktop patcher and process-local Clash proxy launcher",
+  "version": "1.0.3",
+  "description": "Antigravity desktop patcher and process-local HTTP/SOCKS5 proxy launcher",
   "main": "src/main.js",
   "author": "Integrated build for the user",
   "license": "GPL-3.0-only",

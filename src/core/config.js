@@ -3,7 +3,7 @@ const path = require('path');
 
 const DEFAULTS = {
   targetPath: null,
-  proxyUrl: 'http://127.0.0.1:7897',
+  proxyUrl: '',
   autoRestore: true,
   autoLaunch: true,
 };

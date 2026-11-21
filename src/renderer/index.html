@@ -19,7 +19,7 @@
         <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span>设置</button>
         <button class="nav-item" data-view="about"><span class="nav-icon">i</span>关于与恢复说明</button>
       </nav>
-      <div class="sidebar-foot"><div class="proxy-badge"><span class="status-dot"></span><div><strong>Clash 进程代理</strong><span id="sidebarProxy">127.0.0.1:7897</span></div></div><p>无需 TUN · 不改系统代理</p></div>
+      <div class="sidebar-foot"><div class="proxy-badge"><span class="status-dot"></span><div><strong>本地进程代理</strong><span id="sidebarProxy">未配置代理</span></div></div><p>无需 TUN · 不改系统代理</p></div>
     </aside>
 
     <main class="main">
@@ -30,7 +30,7 @@
           <div class="launch-copy"><h2>一个按钮，完成整个流程</h2><p>代理只注入反重力进程树，文件补丁则从独立原版备份恢复。</p></div>
           <div class="launch-actions"><button class="primary-button" id="launchButton"><span class="button-icon">▶</span><span id="launchLabel">启动反重力</span></button><button class="secondary-button" id="restoreButton">恢复原版</button></div>
           <div class="flow" id="flow">
-            <div class="flow-step" data-step="0"><span>1</span><div><strong>检查 Clash</strong><small>真实代理握手</small></div></div><div class="flow-line"></div>
+            <div class="flow-step" data-step="0"><span>1</span><div><strong>检查代理</strong><small>真实代理握手</small></div></div><div class="flow-line"></div>
             <div class="flow-step" data-step="1"><span>2</span><div><strong>备份并补丁</strong><small>哈希双重校验</small></div></div><div class="flow-line"></div>
             <div class="flow-step" data-step="2"><span>3</span><div><strong>注入并启动</strong><small>仅限当前进程树</small></div></div><div class="flow-line"></div>
             <div class="flow-step" data-step="3"><span>4</span><div><strong>退出后还原</strong><small>保留原版备份</small></div></div>
@@ -39,7 +39,7 @@
         <div class="status-grid">
           <section class="status-card"><div class="card-title"><span>客户端</span><span class="card-icon">⌁</span></div><strong id="targetStatus">正在检测…</strong><p id="targetDetail">查找 Antigravity 安装位置</p><button class="text-button" id="chooseTargetButton">手动选择</button></section>
           <section class="status-card"><div class="card-title"><span>文件补丁</span><span class="card-icon">◇</span></div><strong id="patchStatus">等待检测</strong><p id="patchDetail">启动前会核验原版备份</p><button class="text-button" id="openBackupsButton">备份目录</button></section>
-          <section class="status-card"><div class="card-title"><span>Clash 代理</span><span class="card-icon">↗</span></div><strong id="proxyStatus">等待检测</strong><p id="proxyDetail">127.0.0.1:7897</p><button class="text-button" id="refreshButton">重新检查</button></section>
+          <section class="status-card"><div class="card-title"><span>本地代理</span><span class="card-icon">↗</span></div><strong id="proxyStatus">等待检测</strong><p id="proxyDetail">请在设置中填写代理地址</p><button class="text-button" id="refreshButton">重新检查</button></section>
         </div>
         <section class="log-card"><div class="log-header"><div><h2>运行记录</h2><span>补丁、代理与恢复结果会显示在这里</span></div><button class="text-button" id="clearLogsButton">清空</button></div><div class="log-list" id="logList"><div class="empty-log">暂无记录，正在准备环境检查。</div></div></section>
       </section>
@@ -47,7 +47,7 @@
       <section class="view" id="view-settings">
         <header class="page-header"><div><p class="eyebrow">PREFERENCES</p><h1>设置</h1><p>只保留启动流程需要的选项。</p></div></header>
         <section class="settings-card">
-          <div class="setting-row vertical"><div><label for="proxyInput">Clash 代理地址</label><p>默认使用 Clash Verge 的混合端口，无需开启 TUN。</p></div><input id="proxyInput" class="text-input" spellcheck="false" placeholder="http://127.0.0.1:7897" /></div>
+          <div class="setting-row vertical"><div><label for="proxyInput">本地代理地址</label><p>支持 HTTP CONNECT、SOCKS5 或混合端口，地址和端口以你的代理软件为准，无需开启 TUN。</p></div><input id="proxyInput" class="text-input" spellcheck="false" placeholder="http://127.0.0.1:端口 或 socks5://127.0.0.1:端口" /></div>
           <div class="setting-row"><div><label for="autoLaunchInput">打开启动台后自动启动</label><p>自动执行检查、补丁、代理注入和客户端启动，每次打开只执行一次。</p></div><label class="switch"><input type="checkbox" id="autoLaunchInput" /><span></span></label></div>
           <div class="setting-row"><div><label for="autoRestoreInput">反重力退出后恢复原版</label><p>推荐开启。无论是否开启，进程代理都会随客户端退出而消失。</p></div><label class="switch"><input type="checkbox" id="autoRestoreInput" /><span></span></label></div>
           <div class="settings-actions"><button class="primary-button compact" id="saveSettingsButton">保存设置</button><span id="settingsSaved"></span></div>

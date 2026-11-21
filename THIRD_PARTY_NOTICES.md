@@ -14,8 +14,8 @@
 
 - 来源：https://github.com/Ikaros-521/antigravity-launcher
 - 许可：MIT License
-- 使用部分：进程级代理环境变量、Chromium 代理参数、HTTP CONNECT / SOCKS5 真实握手检测、客户端定位与进程监测思路，以及应用图标。
-- 本项目修改：固定默认 Clash 7897，精简界面和探测流程，并接入补丁会话与自动恢复。
+- 使用部分：进程级代理环境变量、Chromium 代理参数、HTTP CONNECT / SOCKS5 真实握手检测、客户端定位与进程监测思路。
+- 本项目修改：支持通用本地代理配置，精简界面和探测流程，并接入补丁会话、自动恢复与重新设计的应用图标。
 
 MIT License
 

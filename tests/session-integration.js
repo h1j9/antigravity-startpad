@@ -22,10 +22,10 @@ const processes = require('../src/core/processes');
   };
   proxy.probe = async () => ({
     ok: true,
-    result: { kind: 'mixed', host: '127.0.0.1', port: 7897, scheme: 'http', loginOk: true, modelOk: true, modelDetail: 'mock', rtt: 1 },
+    result: { kind: 'mixed', host: '127.0.0.1', port: 18080, scheme: 'http', loginOk: true, modelOk: true, modelDetail: 'mock', rtt: 1 },
   });
 
-  const config = { data: { targetPath: mockExe, proxyUrl: 'http://127.0.0.1:7897', autoRestore: true } };
+  const config = { data: { targetPath: mockExe, proxyUrl: 'http://127.0.0.1:18080', autoRestore: true } };
   const patcher = new Patcher(path.join(root, 'userdata'));
   const session = new LauncherSession({ config, patcher });
   const result = await session.start();

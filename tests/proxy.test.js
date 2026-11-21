@@ -2,21 +2,40 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const net = require('net');
 const { parseProxyUrl, buildEnv, proxyArgument, redact, probe } = require('../src/core/proxy');
+const { DEFAULTS } = require('../src/core/config');
+const { LauncherSession } = require('../src/core/session');
 
-test('代理地址支持 7897 简写并校验端口', () => {
-  assert.equal(parseProxyUrl('7897').host, '127.0.0.1');
-  assert.equal(parseProxyUrl('7897').port, 7897);
+test('新用户默认不预设代理端口，空地址不会通过校验', () => {
+  assert.equal(DEFAULTS.proxyUrl, '');
+  assert.equal(parseProxyUrl(''), null);
+  assert.equal(parseProxyUrl('   '), null);
+});
+
+test('未配置代理时在定位客户端和打补丁前停止', async () => {
+  const session = new LauncherSession({
+    config: { data: { proxyUrl: '', targetPath: null } },
+    patcher: { apply: () => { throw new Error('不应进入补丁流程'); } },
+  });
+  const result = await session.start();
+  assert.equal(result.ok, false);
+  assert.match(result.error, /填写本地代理地址和端口/);
+  assert.equal(session.phase, 'error');
+});
+
+test('代理地址支持 18080 简写并校验端口', () => {
+  assert.equal(parseProxyUrl('18080').host, '127.0.0.1');
+  assert.equal(parseProxyUrl('18080').port, 18080);
   assert.equal(parseProxyUrl('http://127.0.0.1:99999'), null);
 });
 
 test('mixed 代理同时注入大小写变量，回环地址始终直连', () => {
-  const ep = { kind: 'mixed', host: '127.0.0.1', port: 7897 };
+  const ep = { kind: 'mixed', host: '127.0.0.1', port: 18080 };
   const env = buildEnv(ep);
-  assert.equal(env.HTTP_PROXY, 'http://127.0.0.1:7897');
-  assert.equal(env.https_proxy, 'http://127.0.0.1:7897');
-  assert.equal(env.ALL_PROXY, 'socks5://127.0.0.1:7897');
+  assert.equal(env.HTTP_PROXY, 'http://127.0.0.1:18080');
+  assert.equal(env.https_proxy, 'http://127.0.0.1:18080');
+  assert.equal(env.ALL_PROXY, 'socks5://127.0.0.1:18080');
   assert.equal(env.NO_PROXY, 'localhost,127.0.0.1,::1');
-  assert.equal(proxyArgument(ep), '--proxy-server=http://127.0.0.1:7897');
+  assert.equal(proxyArgument(ep), '--proxy-server=http://127.0.0.1:18080');
 });
 
 test('SOCKS5-only 使用一致协议，日志地址不泄露凭证', () => {

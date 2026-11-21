@@ -6,9 +6,14 @@ let logs = [];
 let noticeHandler = null;
 let refreshTimer = null;
 
+function proxyDisplay(value) {
+  const text = String(value || '').trim();
+  return text ? text.replace(/^[a-z]+:\/\//i, '') : '未配置代理';
+}
+
 const phaseText = {
   idle: ['准备就绪', '检查代理、应用补丁并启动；客户端退出后自动恢复。', '待机', 'neutral'],
-  checking: ['正在检查环境', '正在确认客户端、残留进程和 Clash 代理。', '检查中', 'busy'],
+  checking: ['正在检查环境', '正在确认客户端、残留进程和本地代理。', '检查中', 'busy'],
   patching: ['正在应用补丁', '先保存并校验原版，再写入补丁。', '补丁中', 'busy'],
   launching: ['正在启动反重力', '代理正在注入本次进程树。', '启动中', 'busy'],
   running: ['反重力运行中', '请正常使用；关闭反重力后会自动恢复原版。', '运行中', 'success'],
@@ -90,9 +95,15 @@ function renderProbe(data) {
     ? (data.inspection.restorable ? '原版备份可用，退出后恢复' : '启动时会核验现有 .agybak 备份')
     : status === 'unpatched' ? '启动前自动备份并应用补丁' : '不会修改无法识别的文件';
   const p = data.proxy;
-  $('proxyStatus').textContent = p.ok ? `代理可用 · ${p.kind}` : '代理不可用';
-  $('proxyDetail').textContent = p.ok ? `${p.endpoint} · ${p.rtt}ms${p.modelOk ? '' : ' · 模型握手失败'}` : (p.error || p.endpoint);
-  $('proxyDetail').title = p.modelDetail || p.error || p.endpoint;
+  if (p.configured === false) {
+    $('proxyStatus').textContent = '未配置代理';
+    $('proxyDetail').textContent = '请在设置中填写地址和端口';
+    $('proxyDetail').title = '地址和端口以你的代理软件显示为准';
+  } else {
+    $('proxyStatus').textContent = p.ok ? `代理可用 · ${p.kind}` : '代理不可用';
+    $('proxyDetail').textContent = p.ok ? `${p.endpoint} · ${p.rtt}ms${p.modelOk ? '' : ' · 模型握手失败'}` : (p.error || p.endpoint);
+    $('proxyDetail').title = p.modelDetail || p.error || p.endpoint;
+  }
   updateSession(sessionState);
 }
 async function refresh() {
@@ -147,7 +158,7 @@ $('saveSettingsButton').addEventListener('click', async () => {
   const result = await api.setConfig({ proxyUrl: $('proxyInput').value, autoLaunch: $('autoLaunchInput').checked, autoRestore: $('autoRestoreInput').checked });
   if (!result.ok) { showNotice(result.error, null, null, true); return; }
   $('settingsSaved').textContent = '已保存';
-  $('sidebarProxy').textContent = $('proxyInput').value.replace(/^[a-z]+:\/\//i, '');
+  $('sidebarProxy').textContent = proxyDisplay($('proxyInput').value);
   setTimeout(() => { $('settingsSaved').textContent = ''; }, 1800);
   await refresh();
 });
@@ -161,7 +172,7 @@ api.onProbeRefresh(scheduleRefresh);
   $('proxyInput').value = boot.config.proxyUrl;
   $('autoLaunchInput').checked = boot.config.autoLaunch;
   $('autoRestoreInput').checked = boot.config.autoRestore;
-  $('sidebarProxy').textContent = boot.config.proxyUrl.replace(/^[a-z]+:\/\//i, '');
+  $('sidebarProxy').textContent = proxyDisplay(boot.config.proxyUrl);
   updateSession(boot.session);
   await refresh();
 })();

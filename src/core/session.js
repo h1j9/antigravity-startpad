@@ -62,6 +62,8 @@ class LauncherSession extends EventEmitter {
     let patchApplied = false;
     try {
       this.setPhase('checking');
+      const proxyUrl = String(this.config.data.proxyUrl || '').trim();
+      if (!proxyUrl) throw new Error('请先在“设置”中填写本地代理地址和端口');
       const target = this.resolveTarget();
       if (!target.found) throw new Error(target.error || '没有找到 Antigravity，请手动选择 Antigravity.exe');
       this.target = target;
@@ -74,8 +76,8 @@ class LauncherSession extends EventEmitter {
         return { ok: false, needsQuit: true, running, error: '检测到未由本启动台注入代理的残留实例' };
       }
 
-      this.log('info', `正在验证 Clash 代理 ${this.config.data.proxyUrl}（不开 TUN）`);
-      const checked = await proxy.probe(this.config.data.proxyUrl);
+      this.log('info', `正在验证本地代理 ${proxyUrl}（不开 TUN）`);
+      const checked = await proxy.probe(proxyUrl);
       if (!checked.ok) throw new Error(checked.error);
       const endpoint = checked.result;
       this.endpoint = proxy.redact(endpoint);

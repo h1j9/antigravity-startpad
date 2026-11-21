@@ -33,7 +33,7 @@ function createWindow() {
     backgroundColor: '#f3f5f7',
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     title: '反重力启动台',
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -41,6 +41,7 @@ function createWindow() {
       sandbox: true,
     },
   });
+  win.setMenu(null);
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   win.once('ready-to-show', () => showMainWindow());
   win.on('closed', () => { win = null; });
@@ -117,20 +118,32 @@ async function probe() {
   const inspection = target.found
     ? patcher.inspect(target.languageServer)
     : { status: 'missing', restorable: false };
-  const checked = await proxy.probe(config.data.proxyUrl);
+  const proxyUrl = String(config.data.proxyUrl || '').trim();
+  const checked = proxyUrl ? await proxy.probe(proxyUrl) : null;
   return {
     target,
     inspection,
     running: target.found ? session.runningFor(target) : [],
-    proxy: {
+    proxy: checked ? {
       ok: checked.ok,
+      configured: true,
       error: checked.error,
-      endpoint: checked.result ? proxy.redact(checked.result) : config.data.proxyUrl,
+      endpoint: checked.result ? proxy.redact(checked.result) : proxyUrl,
       kind: checked.result ? checked.result.kind : null,
       loginOk: checked.result ? checked.result.loginOk : false,
       modelOk: checked.result ? checked.result.modelOk : false,
       modelDetail: checked.result ? checked.result.modelDetail : null,
       rtt: checked.result ? checked.result.rtt : null,
+    } : {
+      ok: false,
+      configured: false,
+      error: null,
+      endpoint: '未配置',
+      kind: null,
+      loginOk: false,
+      modelOk: false,
+      modelDetail: null,
+      rtt: null,
     },
   };
 }
@@ -173,9 +186,12 @@ ipcMain.handle('reset-target', () => {
 ipcMain.handle('set-config', (event, incoming) => {
   const update = {};
   if (typeof incoming.proxyUrl === 'string') {
-    const parsed = proxy.parseProxyUrl(incoming.proxyUrl);
-    if (!parsed) return { ok: false, error: '代理地址格式不正确，例如 http://127.0.0.1:7897' };
-    update.proxyUrl = incoming.proxyUrl.trim();
+    const value = incoming.proxyUrl.trim();
+    if (value) {
+      const parsed = proxy.parseProxyUrl(value);
+      if (!parsed) return { ok: false, error: '代理地址格式不正确，请使用 http://主机:端口 或 socks5://主机:端口' };
+    }
+    update.proxyUrl = value;
   }
   if (typeof incoming.autoRestore === 'boolean') update.autoRestore = incoming.autoRestore;
   if (typeof incoming.autoLaunch === 'boolean') update.autoLaunch = incoming.autoLaunch;
@@ -213,6 +229,7 @@ if (!app.requestSingleInstanceLock()) {
     showMainWindow();
   });
   app.whenReady().then(() => {
+    Menu.setApplicationMenu(null);
     config = new Config(app.getPath('userData'));
     patcher = new Patcher(app.getPath('userData'));
     session = new LauncherSession({ config, patcher });
