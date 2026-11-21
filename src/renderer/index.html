@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:;" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>反重力启动台</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M8 16h6m4 0h6M16 8v6m0 4v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="12" y="12" width="8" height="8" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="16" r="2" fill="currentColor"/><circle cx="26" cy="16" r="2" fill="currentColor"/></svg></div>
+        <div><strong>反重力启动台</strong><span>补丁与代理，一次完成</span></div>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <button class="nav-item active" data-view="home"><span class="nav-icon">⌂</span>启动</button>
+        <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span>设置</button>
+        <button class="nav-item" data-view="about"><span class="nav-icon">i</span>关于与恢复说明</button>
+      </nav>
+      <div class="sidebar-foot"><div class="proxy-badge"><span class="status-dot"></span><div><strong>Clash 进程代理</strong><span id="sidebarProxy">127.0.0.1:7897</span></div></div><p>无需 TUN · 不改系统代理</p></div>
+    </aside>
+
+    <main class="main">
+      <section class="view active" id="view-home">
+        <header class="page-header"><div><p class="eyebrow">ANTIGRAVITY STARTPAD</p><h1 id="headline">准备就绪</h1><p id="subline">检查代理、应用补丁并启动；客户端退出后自动恢复。</p></div><span class="phase-pill neutral" id="phasePill"><span class="status-dot"></span>待机</span></header>
+        <div class="notice hidden" id="notice"><span id="noticeText"></span><button id="noticeAction" class="small-button hidden"></button><button class="notice-close" id="noticeClose" aria-label="关闭">×</button></div>
+        <section class="launch-card">
+          <div class="launch-copy"><h2>一个按钮，完成整个流程</h2><p>代理只注入反重力进程树，文件补丁则从独立原版备份恢复。</p></div>
+          <div class="launch-actions"><button class="primary-button" id="launchButton"><span class="button-icon">▶</span><span id="launchLabel">启动反重力</span></button><button class="secondary-button" id="restoreButton">恢复原版</button></div>
+          <div class="flow" id="flow">
+            <div class="flow-step" data-step="0"><span>1</span><div><strong>检查 Clash</strong><small>真实代理握手</small></div></div><div class="flow-line"></div>
+            <div class="flow-step" data-step="1"><span>2</span><div><strong>备份并补丁</strong><small>哈希双重校验</small></div></div><div class="flow-line"></div>
+            <div class="flow-step" data-step="2"><span>3</span><div><strong>注入并启动</strong><small>仅限当前进程树</small></div></div><div class="flow-line"></div>
+            <div class="flow-step" data-step="3"><span>4</span><div><strong>退出后还原</strong><small>保留原版备份</small></div></div>
+          </div>
+        </section>
+        <div class="status-grid">
+          <section class="status-card"><div class="card-title"><span>客户端</span><span class="card-icon">⌁</span></div><strong id="targetStatus">正在检测…</strong><p id="targetDetail">查找 Antigravity 安装位置</p><button class="text-button" id="chooseTargetButton">手动选择</button></section>
+          <section class="status-card"><div class="card-title"><span>文件补丁</span><span class="card-icon">◇</span></div><strong id="patchStatus">等待检测</strong><p id="patchDetail">启动前会核验原版备份</p><button class="text-button" id="openBackupsButton">备份目录</button></section>
+          <section class="status-card"><div class="card-title"><span>Clash 代理</span><span class="card-icon">↗</span></div><strong id="proxyStatus">等待检测</strong><p id="proxyDetail">127.0.0.1:7897</p><button class="text-button" id="refreshButton">重新检查</button></section>
+        </div>
+        <section class="log-card"><div class="log-header"><div><h2>运行记录</h2><span>补丁、代理与恢复结果会显示在这里</span></div><button class="text-button" id="clearLogsButton">清空</button></div><div class="log-list" id="logList"><div class="empty-log">暂无记录，正在准备环境检查。</div></div></section>
+      </section>
+
+      <section class="view" id="view-settings">
+        <header class="page-header"><div><p class="eyebrow">PREFERENCES</p><h1>设置</h1><p>只保留启动流程需要的选项。</p></div></header>
+        <section class="settings-card">
+          <div class="setting-row vertical"><div><label for="proxyInput">Clash 代理地址</label><p>默认使用 Clash Verge 的混合端口，无需开启 TUN。</p></div><input id="proxyInput" class="text-input" spellcheck="false" placeholder="http://127.0.0.1:7897" /></div>
+          <div class="setting-row"><div><label for="autoLaunchInput">打开启动台后自动启动</label><p>自动执行检查、补丁、代理注入和客户端启动，每次打开只执行一次。</p></div><label class="switch"><input type="checkbox" id="autoLaunchInput" /><span></span></label></div>
+          <div class="setting-row"><div><label for="autoRestoreInput">反重力退出后恢复原版</label><p>推荐开启。无论是否开启，进程代理都会随客户端退出而消失。</p></div><label class="switch"><input type="checkbox" id="autoRestoreInput" /><span></span></label></div>
+          <div class="settings-actions"><button class="primary-button compact" id="saveSettingsButton">保存设置</button><span id="settingsSaved"></span></div>
+        </section>
+        <section class="settings-card"><div class="setting-row vertical"><div><label>客户端位置</label><p id="settingsTargetPath">尚未检测</p></div><div class="inline-actions"><button class="secondary-button" id="settingsChooseTarget">更改位置</button><button class="text-button" id="resetTargetButton">恢复自动查找</button></div></div></section>
+      </section>
+
+      <section class="view" id="view-about">
+        <header class="page-header"><div><p class="eyebrow">ABOUT & RECOVERY</p><h1>关于与恢复说明</h1><p id="versionLabel">反重力启动台</p></div></header>
+        <section class="about-card"><h2>两种“恢复”不是一回事</h2><div class="explanation"><strong>代理环境</strong><p>代理由环境变量和 Chromium 启动参数注入，只存在于本次启动的反重力及其子进程中。进程退出后自然消失，不写系统代理、注册表或虚拟网卡。</p></div><div class="explanation"><strong>文件补丁</strong><p>地区适配补丁会修改 language_server.exe。启动台先保存原版及 SHA-256，再写入补丁；关闭反重力后从备份恢复，并再次核对哈希。</p></div><div class="explanation"><strong>异常断电或强制结束</strong><p>这种情况下可能来不及恢复。下次打开时会显示“已打补丁 / 待恢复”，可点“恢复原版”。若客户端已经更新或备份不匹配，启动台会停止覆盖并提示。</p></div></section>
+        <section class="about-card"><h2>整合来源</h2><button class="source-link" data-url="https://github.com/FTZ-OPUS/antigravity-macos-patcher"><strong>FTZ-OPUS / antigravity-macos-patcher</strong><span>GPL-3.0 · 文件补丁与备份思路</span></button><button class="source-link" data-url="https://github.com/Ikaros-521/antigravity-launcher"><strong>Ikaros-521 / antigravity-launcher</strong><span>MIT · 进程级代理与真实握手检测</span></button><p class="license-note">整合版本按 GPL-3.0 发布，并保留原项目的许可与归属说明。</p></section>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

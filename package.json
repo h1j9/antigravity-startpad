@@ -1,0 +1,60 @@
+{
+  "name": "antigravity-startpad",
+  "version": "1.0.2",
+  "description": "Antigravity desktop patcher and process-local Clash proxy launcher",
+  "main": "src/main.js",
+  "author": "Integrated build for the user",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.test.js",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "npmRebuild": false,
+    "appId": "local.antigravity.startpad",
+    "productName": "反重力启动台",
+    "copyright": "GPL-3.0-only; see THIRD_PARTY_NOTICES.md",
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "package.json",
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Antigravity-Startpad-${version}-win-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "反重力启动台",
+      "artifactName": "Antigravity-Startpad-Setup-${version}-win-${arch}.${ext}"
+    }
+  }
+}
