@@ -7,6 +7,7 @@ const detect = require('./core/detect');
 const proxy = require('./core/proxy');
 const processes = require('./core/processes');
 const windowSafe = require('./core/window-safe');
+const { finalizeQuit } = require('./core/quit');
 
 let win = null;
 let tray = null;
@@ -102,13 +103,12 @@ async function requestQuit(fromTray) {
     const result = await session.shutdown(forceClose);
     if (!result.ok) throw new Error(result.error || '无法安全退出');
     allowQuit = true;
-    app.quit();
+    finalizeQuit(app, tray);
+    tray = null;
   } catch (error) {
     log('error', `退出前恢复失败：${error.message}`);
-    if (windowSafe.isUsable(win)) {
-      showMainWindow();
-      dialog.showErrorBox('暂未退出', `${error.message}\n\n启动台保持运行，原版备份也已保留。`);
-    }
+    if (windowSafe.isUsable(win)) showMainWindow();
+    dialog.showErrorBox('暂未退出', `${error.message}\n\n启动台保持运行，原版备份也已保留。`);
   } finally {
     quitInProgress = false;
   }

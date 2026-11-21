@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { Patcher, resolveGate, applyGate, getStatus, sha256 } = require('../src/core/patcher');
+const { LauncherSession } = require('../src/core/session');
 
 const ORIGINAL_X64 = Buffer.from([0x80,0x78,0x08,0x00,0x74,0x11,0x48,0x8b,0x22,0x24,0x33,0x48,0x89,0x44,0x60]);
 const PREFIX = Buffer.from([0x00,0x0a,0x0d,0xff,0x41,0x42]);
@@ -58,6 +59,28 @@ test('完整流程：备份、补丁、重复启动、恢复、再次补丁', ()
     patcher.apply(target);
     patcher.restore(target);
     assert.deepEqual(fs.readFileSync(target), ORIGINAL);
+  } finally { cleanup(root); }
+});
+
+test('恢复完成后可以重复执行退出清理，不会重复恢复或卡住', async () => {
+  const { root, target, data } = workspace();
+  try {
+    const mockExe = path.join(root, 'Antigravity.exe');
+    const languageServer = path.join(root, 'resources', 'bin', 'language_server.exe');
+    fs.mkdirSync(path.dirname(languageServer), { recursive: true });
+    fs.writeFileSync(mockExe, '');
+    fs.writeFileSync(languageServer, ORIGINAL);
+    const patcher = new Patcher(data);
+    const config = { data: { targetPath: mockExe, autoRestore: true } };
+    const session = new LauncherSession({ config, patcher });
+    session.runningFor = () => [];
+    patcher.apply(languageServer);
+    const first = await session.shutdown(false);
+    assert.equal(first.ok, true);
+    assert.deepEqual(fs.readFileSync(languageServer), ORIGINAL);
+    const second = await session.shutdown(false);
+    assert.equal(second.ok, true);
+    assert.deepEqual(fs.readFileSync(languageServer), ORIGINAL);
   } finally { cleanup(root); }
 });
 

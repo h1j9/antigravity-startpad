@@ -5,7 +5,8 @@ const DEFAULTS = {
   targetPath: null,
   proxyUrl: '',
   autoRestore: true,
-  autoLaunch: true,
+  autoLaunch: false,
+  settingsVersion: 2,
 };
 
 class Config {
@@ -16,11 +17,17 @@ class Config {
   }
 
   load() {
-    try {
-      const raw = JSON.parse(fs.readFileSync(this.file, 'utf8'));
-      this.data = { ...DEFAULTS, ...raw };
-    } catch {
+    let raw;
+    try { raw = JSON.parse(fs.readFileSync(this.file, 'utf8')); }
+    catch {
       this.data = { ...DEFAULTS };
+      return this;
+    }
+    this.data = { ...DEFAULTS, ...raw };
+    if (!Number.isInteger(raw.settingsVersion) || raw.settingsVersion < 2) {
+      this.data.autoLaunch = false;
+      this.data.settingsVersion = 2;
+      try { this.save(); } catch { /* 写入失败时保留下次迁移机会，不清空其他设置 */ }
     }
     return this;
   }

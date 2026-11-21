@@ -10,6 +10,7 @@ const { LauncherSession } = require('../src/core/session');
 
 test('新用户默认不预设代理端口，空地址不会通过校验', () => {
   assert.equal(DEFAULTS.proxyUrl, '');
+  assert.equal(DEFAULTS.autoLaunch, false);
   assert.equal(parseProxyUrl(''), null);
   assert.equal(parseProxyUrl('   '), null);
 });
